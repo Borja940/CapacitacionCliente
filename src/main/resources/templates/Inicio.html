@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Inicio - Sistema de Gestión</title>
+    <link href="https://jsdelivr.net" rel="stylesheet">
+</head>
+<body class="container mt-5">
+<div class="p-5 mb-4 bg-light rounded-3 shadow-sm">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold text-primary">Sistema de Control de Inscripciones</h1>
+        <p class="col-md-8 fs-4">Bienvenido. Desde aquí puedes administrar todo el catálogo de cursos, controlar los participantes y gestionar las inscripciones.</p>
+        <hr class="my-4">
+        <div class="d-flex gap-3">
+            <a th:href="@{/cursos}" class="btn btn-primary btn-lg">Gestionar Cursos</a>
+            <a th:href="@{/participantes}" class="btn btn-success btn-lg">Gestionar Participantes</a>
+            <a th:href="@{/inscripciones/nueva}" class="btn btn-warning btn-lg text-dark">Nueva Inscripción</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
