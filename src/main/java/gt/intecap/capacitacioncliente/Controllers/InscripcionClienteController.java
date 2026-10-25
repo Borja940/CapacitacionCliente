@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -18,14 +19,15 @@ import java.util.List;
 @RequestMapping("/inscripciones")//ruta del navegador
 public class InscripcionClienteController {
 
-    private  final RestClient webClient;
+    private final RestClient webClient;
 
-    public InscripcionClienteController(@Value("${api.backend.url") String baseUrl){
+    public InscripcionClienteController(@Value("${api.backend.url:http://localhost:8080/api}") String baseUrl) {
         this.webClient = RestClient.builder().baseUrl(baseUrl).build();
     }
+
     //Muestra todos los alumnos registrados que sigan activos.
     @GetMapping
-    public String listar(Model model){
+    public String listar(Model model) {
         //hace la peticion Get a la api y trae la lista en formato JSON de participantes activos
         List<InscripcionModel> lista = webClient.get()
                 .uri("/inscripciones")
@@ -39,12 +41,12 @@ public class InscripcionClienteController {
 
     //Muestra la pantalla con el formulario para registrar un nuevo participante.
     @GetMapping("/nuevo")
-    public String mostrarFormulario(Model model){
+    public String mostrarFormulario(Model model) {
         //consume la API para  Traer todos los cursos activos disponibles
         List<CursoModel> cursos = webClient.get()
                 .uri("/cursos")
-                    .retrieve().body(new ParameterizedTypeReference<List<CursoModel>>() {
-        });
+                .retrieve().body(new ParameterizedTypeReference<List<CursoModel>>() {
+                });
         //trae todos los participantes habilitados
         List<ParticipanteModel> participantes = webClient.get()
                 .uri("/participantes")
@@ -55,50 +57,53 @@ public class InscripcionClienteController {
         model.addAttribute("listaCursos", cursos);
         model.addAttribute("listaParticipantes", participantes);
 
-        return "inscripçiones/formulario";
+        return "inscripciones/formulario";
     }
 
     //Procesa la matricula  los valida y los manda a guardar a la api
     @PostMapping("/guardar")
-    public  String inscribir(@Valid @ModelAttribute("incripcion") InscripcionModel inscripcion, BindingResult result, Model model){
-        // Verifica si hay campos vacios en el formulario cliente, recarga las listas y  muestra los errores
-        if (result.hasErrors()){
-            List<CursoModel> cursos = webClient.get()
-                    .uri("/cursos")
-                    .retrieve().body(new ParameterizedTypeReference<List<CursoModel>>() {
-                    });
+    public String inscribir(@Valid @ModelAttribute("inscripcion") InscripcionModel inscripcion, BindingResult result, Model model) {
 
-            List<ParticipanteModel> participantes = webClient.get()
-                    .uri("/participantes")
-                    .retrieve().body(new ParameterizedTypeReference<List<ParticipanteModel>>() {
-                    });
-            model.addAttribute("listaCursos", cursos);
-            model.addAttribute("listaParticipantes", participantes);
-            return  "inscripciones/formulario";
+        if (inscripcion.getEstado() == null || inscripcion.getEstado().isEmpty()) {
+            inscripcion.setEstado("Activo");
         }
+        try {
 
-        //Envia el JSON mediante post al backend, la api validara si hay duplicados y cupos disponibles
-        webClient.post()
-                .uri("/inscripciones")
-                .body(inscripcion)
-                .retrieve()
-                .toBodilessEntity();
-        return "redirect:/inscripciones";
+            //Envia el JSON mediante post al backend, la api validara si hay duplicados y cupos disponibles
+            webClient.post()
+                    .uri("/inscripciones")
+                    .body(inscripcion)
+                    .retrieve()
+                    .toBodilessEntity();
+            return "redirect:/inscripciones";
+
+        } catch (HttpClientErrorException.BadRequest ex) {
+            String mensajeError = ex.getResponseBodyAsString();
+            model.addAttribute("error", mensajeError);
+
+                model.addAttribute("listaCursos", webClient.get()
+                        .uri("/cursos").retrieve()
+                        .body(new ParameterizedTypeReference<List<CursoModel>>() {}));
+                model.addAttribute("listaParticipantes", webClient.get()
+                        .uri("/participantes")
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<List<ParticipanteModel>>() {}));
+                return "inscripciones/formulario";
+
+
+        }
     }
 
-
     //cancela la matricula liberando un cupo del curso de forma inmediata.
-    @GetMapping("/cancelar/{id}")
+    @PostMapping("/cancelar/{id}")
     public String eliminar(@PathVariable Long id){
 
         // hace una llamada de tipo put
-        webClient.delete()
+        webClient.put()
                 .uri("/inscripciones/" + id + "/cancelar")
                 .retrieve()
                 .toBodilessEntity();
         return "redirect:/inscripciones";
     }
-
-
 
 }

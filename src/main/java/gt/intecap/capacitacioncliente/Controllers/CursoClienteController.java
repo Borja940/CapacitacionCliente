@@ -20,8 +20,12 @@ public class CursoClienteController {
     private final RestClient webClient;
 
     //contructor recibe la url de properties e inicializa el cliente de comunicacion
-    public CursoClienteController(@Value("${api.backend.url}") String baseUrl) {
+    public CursoClienteController(@Value("${api.backend.url:http://localhost:8080/api}") String baseUrl) {
         this.webClient = RestClient.builder().baseUrl(baseUrl).build();
+    }
+    @GetMapping("/")
+    public String irAlInicio(){
+        return "index";
     }
 
     //Muestra la pantalla principal con  la tabla de todos los cursos activos.
@@ -39,13 +43,24 @@ public class CursoClienteController {
 
     }
 
+    @GetMapping("/detalle/{id}")
+    public String verDetalle(@PathVariable Long id, Model model) {
+
+        CursoModel curso = this.webClient.get()
+                .uri("/cursos/{id}", id)
+                .retrieve()
+                .body(CursoModel.class);
+        model.addAttribute("curso", curso);
+        return "cursos/detalle";
+    }
+
     //Muestra la pantalla con el formulario para registrar un curso nuevo.
 
     @GetMapping("/nuevo")
     public String mostrarFormulario(Model model){
 
         // Envía un objeto vacío de CursoModel  para agregar al formulario
-        model.addAttribute("/curso",new CursoModel());
+        model.addAttribute("curso", new CursoModel());
         return "cursos/formulario"; // Retorna la vista HTML
     }
 
@@ -64,7 +79,6 @@ public class CursoClienteController {
                 .toBodilessEntity();
         return "redirect:/cursos";//listado general para ver el nuevo curso
     }
-
 
     //elimina  un curso por id.
     @GetMapping("/eliminar/{id}")

@@ -1,5 +1,7 @@
 package gt.intecap.capacitacioncliente.Models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -19,8 +21,8 @@ public class InscripcionModel {
     @NotNull(message = "Debe seleccionar un participante")
     private ParticipanteModel participante;
 
-    @NotNull(message = "La fecha es obligatoria")
-    private LocalDate fechaIncripcion;
+   @NotNull(message = "La inscripción es obligatoria")
+    private LocalDate fechaInscripcion;
 
     private String estado;
 
